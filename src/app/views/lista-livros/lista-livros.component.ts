@@ -16,40 +16,24 @@ export class ListaLivrosComponent {
   campoBusca = new FormControl;
   mensagemErro = '';
   livrosResultado: LivrosResultado;
+  listaLivros: Livro[];
 
   constructor(
     private service: LivroService
   ) { }
 
-  campoBuscaChanges$ = this.campoBusca.valueChanges
+  livrosEncontrados$ = this.campoBusca.valueChanges
     .pipe(
       debounceTime(PAUSA),
       filter((valorDigitado) => valorDigitado.length >= 3),
-      tap(() => console.log('Fluxo inicial')),
       distinctUntilChanged(),
-      shareReplay(),
-      switchMap(valorDigitado => this.service.buscar(valorDigitado))
-    )
-  ;
-
-  totalDeLivros$ = this.campoBuscaChanges$
-    .pipe(
+      switchMap((valorDigitado) => this.service.buscar(valorDigitado)),
       map(resultado => this.livrosResultado = resultado),
-      catchError(erro => {
-        console.log(erro);
-        return of();
-      })
-    )
-  ;
-
-  livrosEncontrados$ = this.campoBuscaChanges$
-    .pipe(
       map(resultado => resultado.items ?? []),
-      map(items => this.livrosResultadoParaLivros(items)),
-      tap(() => console.log('Requisição ao servidor')),
-      catchError(erro => {
-        console.log(erro);
-        throw new Error(this.mensagemErro = 'Ops, ocorreu um erro. Recarregue a aplicação');
+      map(items =>this.listaLivros = this.livrosResultadoParaLivros(items)),
+      catchError((erro) => {
+        console.log(erro)
+        return throwError(() => new Error(this.mensagemErro = 'Ops, ocorreu um erro. Recarregue a aplicação'))
       })
     )
   ;
